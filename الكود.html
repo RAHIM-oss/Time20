@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Timer</title>
+    <style>
+        body {
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: Arial, sans-serif;
+            color: white;
+            text-align: center;
+            background: black;
+            overflow: hidden;
+        }
+
+        #background {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: url('wallpaperflare.com_wallpaper.jpg') no-repeat center center/cover;
+            filter: blur(0.5px);
+            z-index: -1;
+        }
+
+        #timer-container {
+            position: relative;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 20px 40px;
+            border-radius: 30px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
+            z-index: 1;
+        }
+
+        #timer {
+            font-size: 7rem;
+            font-family: 'Courier New', Courier, monospace;
+            font-weight: bold;
+        }
+
+        #controls {
+            margin-top: 20px;
+        }
+
+        button {
+            padding: 10px 20px;
+            font-size: 1rem;
+            margin: 5px;
+            border: none;
+            border-radius: 5px;
+            background-color: #444;
+            color: white;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #666;
+        }
+
+        #fullscreenButton {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background-color: #444;
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+            border: none;
+            cursor: pointer;
+            backdrop-filter: blur(5px);
+        }
+
+        #fullscreenButton:hover {
+            background-color: #666;
+        }
+
+        #endMessage {
+            display: none; /* إخفاء الرسالة عند البداية */
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            font-size: 3rem;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            z-index: 9999;
+            backdrop-filter: blur(10px);
+            flex-direction: column;
+        }
+
+        #endMessage button {
+            margin-top: 20px;
+            background-color: #4CAF50;
+            border-radius: 5px;
+            padding: 10px;
+            color: white;
+            font-size: 1.2rem;
+            cursor: pointer;
+        }
+
+        #endMessage button:hover {
+            background-color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div id="background"></div>
+    <div id="timer-container">
+        <div id="timer">20:00</div>
+        <div id="controls">
+            <button id="startPauseButton" onclick="toggleTimer()">تشغيل</button>
+            <button onclick="resetTimer()">إعادة تعيين</button>
+        </div>
+    </div>
+    <button id="fullscreenButton" onclick="toggleFullscreen()">تكبير الشاشة</button>
+
+    <audio id="alarmSound" src="alarm.mp3" preload="auto"></audio>
+
+    <!-- رسالة "انتهى" عند انتهاء المؤقت -->
+    <div id="endMessage">
+        <div>الوقت انتهى</div>
+        <button onclick="hideEndMessage()">إخفاء</button>
+    </div>
+
+    <script>
+        let duration = 20 * 60; // تعيين مدة المؤقت إلى 20 دقيقة فقط (1200 ثانية)
+        let timer;
+        let isPaused = true; // تعيين الحالة الأولية للمؤقت على التوقف
+        const display = document.getElementById('timer');
+        const startPauseButton = document.getElementById('startPauseButton');
+        const alarmSound = document.getElementById('alarmSound');
+        const endMessage = document.getElementById('endMessage');
+
+        function updateDisplay() {
+            const minutes = Math.floor(duration / 60);
+            const seconds = duration % 60;
+            display.textContent = `${minutes < 10 ? '0' : ''}${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+        }
+
+        function startTimer() {
+            timer = setInterval(() => {
+                if (!isPaused) {
+                    if (duration > 0) {
+                        duration--;
+                        updateDisplay();
+                    } else {
+                        clearInterval(timer);
+                        alarmSound.play();
+                        showEndMessage(); // إظهار رسالة "انتهى" فقط عند انتهاء الوقت
+                    }
+                }
+            }, 1000);
+        }
+
+        function toggleTimer() {
+            if (isPaused) {
+                startTimer();
+                startPauseButton.textContent = "إيقاف";
+            } else {
+                clearInterval(timer);
+                startPauseButton.textContent = "تشغيل";
+            }
+            isPaused = !isPaused;
+        }
+
+        function resetTimer() {
+            clearInterval(timer);
+            duration = 20 * 60; // إعادة تعيين المؤقت إلى 20 دقيقة
+            updateDisplay();
+            isPaused = true; // إعادة الحالة إلى التوقف
+            startPauseButton.textContent = "تشغيل"; // إظهار زر "تشغيل" عند إعادة التعيين
+            endMessage.style.display = "none"; // إخفاء الرسالة عند إعادة التعيين
+        }
+
+        function showEndMessage() {
+            endMessage.style.display = "flex";
+        }
+
+        function hideEndMessage() {
+            endMessage.style.display = "none";
+            alarmSound.pause();
+            alarmSound.currentTime = 0;
+        }
+
+        window.onload = function () {
+            updateDisplay();
+            // لا تظهر رسالة "انتهى" عند تحميل الصفحة
+            endMessage.style.display = "none";
+        };
+
+        window.addEventListener('keydown', function (event) {
+            if (event.code === 'Space') {
+                event.preventDefault();
+                toggleTimer();
+            }
+        });
+
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen();
+                document.getElementById("fullscreenButton").textContent = "تصغير الشاشة";
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                    document.getElementById("fullscreenButton").textContent = "تكبير الشاشة";
+                }
+            }
+        }
+    </script>
+</body>
+</html>
